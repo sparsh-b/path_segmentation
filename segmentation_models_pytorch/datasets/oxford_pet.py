@@ -10,7 +10,7 @@ from tqdm import tqdm
 class OxfordPetDataset(torch.utils.data.Dataset):
     def __init__(self, root, mode="train", transform=None):
 
-        assert mode in {"train", "test"}
+        assert mode in {"train", "test", "JMP_test"}
 
         self.root = root
         self.mode = mode
@@ -35,7 +35,7 @@ class OxfordPetDataset(torch.utils.data.Dataset):
         mask = np.array(Image.open(mask_path))
         mask = self._preprocess_mask(mask)
 
-        sample = dict(image=image, mask=mask) 
+        sample = dict(image=image, mask=mask, filename=filename)
         if self.transform is not None:
             sample = self.transform(**sample)
 
@@ -47,7 +47,13 @@ class OxfordPetDataset(torch.utils.data.Dataset):
         return mask
 
     def _read_split(self):
-        split_filename = "test.txt" if self.mode == "test" else "train.txt"
+        if self.mode == "test":
+            split_filename = "test.txt"
+        elif self.mode == "train":
+            split_filename = "train.txt"
+        elif self.mode == "JMP_test":
+            split_filename = "JMP_test.txt"
+        
         split_filepath = os.path.join(self.root, "data", split_filename)
         with open(split_filepath) as f:
             split_data = f.read().strip("\n").split("\n")
