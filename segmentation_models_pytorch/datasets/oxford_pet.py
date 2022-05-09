@@ -2,6 +2,7 @@ import os
 import torch
 import shutil
 import numpy as np
+import torch
 
 from PIL import Image
 from tqdm import tqdm
@@ -10,7 +11,7 @@ from tqdm import tqdm
 class OxfordPetDataset(torch.utils.data.Dataset):
     def __init__(self, root, mode="train", transform=None):
 
-        assert mode in {"train", "test", "JMP_test"}
+        assert mode in {"train", "test", "JMP_test", "train_fold0", "train_fold1", "train_fold2", "test_fold0", "test_fold1", "test_fold2"}
 
         self.root = root
         self.mode = mode
@@ -47,13 +48,7 @@ class OxfordPetDataset(torch.utils.data.Dataset):
         return mask
 
     def _read_split(self):
-        if self.mode == "test":
-            split_filename = "test.txt"
-        elif self.mode == "train":
-            split_filename = "train.txt"
-        elif self.mode == "JMP_test":
-            split_filename = "JMP_test.txt"
-        
+        split_filename = self.mode+".txt"
         split_filepath = os.path.join(self.root, "data", split_filename)
         with open(split_filepath) as f:
             split_data = f.read().strip("\n").split("\n")
@@ -65,16 +60,18 @@ class SimpleOxfordPetDataset(OxfordPetDataset):
     def __getitem__(self, *args, **kwargs):
 
         sample = super().__getitem__(*args, **kwargs)
-
+        
         # resize images
         resize_w_h = (640, 352)
         image = np.array(Image.fromarray(sample["image"]).resize(resize_w_h, Image.LINEAR))
         mask = np.array(Image.fromarray(sample["mask"]).resize(resize_w_h, Image.NEAREST))
-
         # convert to other format HWC -> CHW
         sample["image"] = np.moveaxis(image, -1, 0)
         sample["mask"] = np.expand_dims(mask, 0)
-
+        
+        # if 'test' in self.mode:
+        #     sample["image"] = torch.from_numpy(sample["image"])
+        #     sample["mask"] = torch.from_numpy(sample["mask"])
         return sample
 
 
